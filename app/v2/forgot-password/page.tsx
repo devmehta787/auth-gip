@@ -1,37 +1,47 @@
 "use client"
 
-import { useState } from 'react';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { auth, actionCodeSettings } from '@/lib/firebase'
+import Link from 'next/link'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email, actionCodeSettings)
       toast({
         title: "Reset email sent",
         description: "Please check your inbox for further instructions.",
-      });
+      })
+      setTimeout(() => {
+        router.push('/v2/sing-in')
+      }, 3000)
     } catch (error) {
       toast({
-        title: "Failed to send reset email",
-        description: "Please check your email address and try again.",
+        title: "Error",
+        description: "Failed to send reset email. Please check your email address and try again.",
         variant: "destructive",
-      });
+      })
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <form onSubmit={handleSubmit} className="p-8 bg-white rounded shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center">Forgot Password</h2>
+      <form onSubmit={handleResetPassword} className="p-8 bg-white rounded-lg shadow-md w-96 space-y-6">
+        <h2 className="text-2xl font-bold text-center">Forgot Password</h2>
         <div className="space-y-4">
           <Input
             type="email"
@@ -40,9 +50,20 @@ export default function ForgotPassword() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <Button type="submit" className="w-full">Send Reset Email</Button>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Sending..." : "Send Reset Email"}
+          </Button>
+        </div>
+        <div className="text-center">
+          <Link href="/v2/sing-in" className="text-sm text-blue-500 hover:underline">
+            Back to Sign In
+          </Link>
         </div>
       </form>
     </div>
-  );
+  )
 }
